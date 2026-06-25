@@ -1,0 +1,62 @@
+# resources/catalogs.yml
+# Unity Catalog catalogs + medallion schemas for the three mesh domains.
+# NOTE: external_locations / catalog creation may require the `direct` deployment
+# engine and appropriate metastore-admin privileges. If your trial account can't
+# create catalogs via the bundle, create them once via SQL (see bootstrap notebook)
+# and reference them by name instead.
+
+resources:
+  schemas:
+    # ---- prod_telematics -----------------------------------------------------
+    telematics_bronze:
+      catalog_name: ${var.catalog_telematics}
+      name: bronze
+      comment: "Telematics raw ingest (Event Hubs streaming + Auto Loader)"
+    telematics_silver:
+      catalog_name: ${var.catalog_telematics}
+      name: silver
+      comment: "Telematics cleaned/conformed, trip sessionization, SCD2 dims"
+    telematics_gold:
+      catalog_name: ${var.catalog_telematics}
+      name: gold
+      comment: "Telematics Kimball stars: fact_trip, fact_telemetry_event, dims"
+    telematics_docs:
+      catalog_name: ${var.catalog_telematics}
+      name: docs
+      comment: "Telematics RAG corpus: recall letters, vehicle manuals (embeddings)"
+
+    # ---- prod_policy ---------------------------------------------------------
+    policy_bronze:
+      catalog_name: ${var.catalog_policy}
+      name: bronze
+      comment: "Policy raw ingest (Auto Loader: policies, endorsements, vehicle ref)"
+    policy_silver:
+      catalog_name: ${var.catalog_policy}
+      name: silver
+      comment: "Policy cleaned/conformed, SCD2 dim_policy/dim_coverage, CDC endorsements"
+    policy_gold:
+      catalog_name: ${var.catalog_policy}
+      name: gold
+      comment: "Policy stars: fact_policy_inforce_monthly, fact_policy_transaction"
+    policy_docs:
+      catalog_name: ${var.catalog_policy}
+      name: docs
+      comment: "Policy RAG corpus: state DOI sample policy forms (embeddings)"
+
+    # ---- prod_claims ---------------------------------------------------------
+    claims_bronze:
+      catalog_name: ${var.catalog_claims}
+      name: bronze
+      comment: "Claims raw ingest (Auto Loader: claims, FNOL, payments)"
+    claims_silver:
+      catalog_name: ${var.catalog_claims}
+      name: silver
+      comment: "Claims cleaned/conformed, CDC status history"
+    claims_gold:
+      catalog_name: ${var.catalog_claims}
+      name: gold
+      comment: "Claims stars + cross-domain marts: fact_claim, mart_claim_360"
+    claims_docs:
+      catalog_name: ${var.catalog_claims}
+      name: docs
+      comment: "Claims RAG corpus: ODI complaint narratives (embeddings)"

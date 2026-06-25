@@ -1,0 +1,11 @@
+# Local dev / scripts (the cluster has its own runtime).
+databricks-sdk>=0.30
+databricks-cli>=0.18
+pyspark==3.5.*
+faker>=25.0
+h3>=4.0
+kaggle>=1.6
+azure-eventhub>=5.11
+python-dotenv>=1.0
+pytest>=8.0
+mlflow>=2.14

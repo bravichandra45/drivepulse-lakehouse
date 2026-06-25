@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(ls*)",
+      "Bash(cat*)",
+      "Bash(databricks bundle validate*)",
+      "Bash(databricks bundle summary*)",
+      "Bash(pytest*)",
+      "Bash(python -m pytest*)",
+      "Bash(ruff*)"
+    ],
+    "ask": [
+      "Bash(databricks bundle deploy*)",
+      "Bash(databricks bundle run*)",
+      "Bash(git commit*)",
+      "Bash(git push*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./.databrickscfg)",
+      "Read(~/.databrickscfg)"
+    ]
+  },
+  "env": {
+    "DATABRICKS_CONFIG_PROFILE": "drivepulse"
+  }
+}

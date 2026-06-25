@@ -1,0 +1,46 @@
+# resources/pipelines.yml
+# Lakeflow Declarative Pipelines (formerly Delta Live Tables) — one per domain silver.
+# Each pipeline runs the domain's silver transformation notebooks with expectations,
+# quarantine, and APPLY CHANGES INTO for SCD2 / CDC.
+
+resources:
+  pipelines:
+    telematics_silver_pipeline:
+      name: "[${bundle.target}] telematics_silver"
+      catalog: ${var.catalog_telematics}
+      schema: silver
+      serverless: true
+      continuous: false        # triggered; flip to true for always-on streaming
+      libraries:
+        - notebook:
+            path: ../domains/telematics/silver/trip_sessionization.py
+        - notebook:
+            path: ../domains/telematics/silver/dim_driver_scd2.py
+      configuration:
+        bundle.target: ${bundle.target}
+
+    policy_silver_pipeline:
+      name: "[${bundle.target}] policy_silver"
+      catalog: ${var.catalog_policy}
+      schema: silver
+      serverless: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../domains/policy/silver/dim_policy_scd2.py
+        - notebook:
+            path: ../domains/policy/silver/endorsements_cdc.py
+      configuration:
+        bundle.target: ${bundle.target}
+
+    claims_silver_pipeline:
+      name: "[${bundle.target}] claims_silver"
+      catalog: ${var.catalog_claims}
+      schema: silver
+      serverless: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../domains/claims/silver/claim_status_cdc.py
+      configuration:
+        bundle.target: ${bundle.target}

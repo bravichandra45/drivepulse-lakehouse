@@ -1,0 +1,44 @@
+# resources/jobs.yml
+# Orchestration jobs. Kept small for a trial workspace (single-node / serverless).
+
+resources:
+  jobs:
+    # One-time: create catalogs/schemas if the bundle can't, set grants, seed reference.
+    bootstrap_uc:
+      name: "[${bundle.target}] bootstrap_uc"
+      tasks:
+        - task_key: create_catalogs_and_schemas
+          notebook_task:
+            notebook_path: ../src/drivepulse/common/bootstrap_uc.py
+            base_parameters:
+              catalog_telematics: ${var.catalog_telematics}
+              catalog_policy: ${var.catalog_policy}
+              catalog_claims: ${var.catalog_claims}
+
+    # Replay VED telemetry into Event Hubs and land streaming bronze.
+    telematics_ingest:
+      name: "[${bundle.target}] telematics_ingest"
+      tasks:
+        - task_key: replay_to_eventhubs
+          notebook_task:
+            notebook_path: ../ingestion/eventhubs_simulator/replay_telemetry.py
+            base_parameters:
+              speedup: "50"
+        - task_key: stream_bronze
+          depends_on:
+            - task_key: replay_to_eventhubs
+          notebook_task:
+            notebook_path: ../domains/telematics/bronze/stream_telemetry_bronze.py
+
+    # Build gold marts after silver pipelines have run.
+    build_gold:
+      name: "[${bundle.target}] build_gold"
+      tasks:
+        - task_key: telematics_gold
+          notebook_task:
+            notebook_path: ../domains/telematics/gold/build_fact_trip.py
+        - task_key: claims_360
+          depends_on:
+            - task_key: telematics_gold
+          notebook_task:
+            notebook_path: ../domains/claims/gold/build_mart_claim_360.py

@@ -1,0 +1,32 @@
+# Secrets & local config
+.env
+.databrickscfg
+*.pem
+*.key
+
+# Claude Code: commit settings.json, ignore personal/secret overrides
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Data — never commit raw datasets
+data/
+*.csv
+*.parquet
+*.zip
+!docs/**/*.csv
+
+# Databricks bundle state
+.databricks/
+.bundle/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store

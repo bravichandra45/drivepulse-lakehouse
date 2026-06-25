@@ -1,0 +1,65 @@
+# databricks.yml — DrivePulse Lakehouse
+# Declarative Automation Bundle (formerly "Databricks Asset Bundle").
+# Docs: https://docs.databricks.com/aws/en/dev-tools/bundles/
+#
+# Auth is NOT stored here. The CLI matches the `host` below to a profile in
+# ~/.databrickscfg and uses that profile's credentials. See README → SETUP.
+
+bundle:
+  name: drivepulse-lakehouse
+
+# Pull in all resource definitions (catalogs, schemas, pipelines, jobs).
+include:
+  - resources/*.yml
+
+# Variables let dev/prod use different catalog names without touching code.
+variables:
+  catalog_telematics:
+    description: Telematics domain catalog
+    default: dev_telematics
+  catalog_policy:
+    description: Policy domain catalog
+    default: dev_policy
+  catalog_claims:
+    description: Claims domain catalog
+    default: dev_claims
+  eventhubs_scope:
+    description: Databricks secret scope holding Event Hubs connection string
+    default: drivepulse-eventhubs
+
+# Don't sync local-only files to the workspace.
+sync:
+  exclude:
+    - .env
+    - .venv/
+    - "**/__pycache__/**"
+    - data/
+
+targets:
+  # ---- Development (default) -------------------------------------------------
+  dev:
+    mode: development          # prefixes resources with your username, pauses schedules
+    default: true
+    workspace:
+      # Replace with your Azure Databricks workspace URL, e.g.
+      # https://adb-1234567890123456.7.azuredatabricks.net
+      host: https://adb-REPLACE_ME.0.azuredatabricks.net
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog_telematics: dev_telematics
+      catalog_policy: dev_policy
+      catalog_claims: dev_claims
+
+  # ---- Production ------------------------------------------------------------
+  prod:
+    mode: production           # deploys as-is, schedules active, stricter checks
+    workspace:
+      host: https://adb-REPLACE_ME.0.azuredatabricks.net
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog_telematics: prod_telematics
+      catalog_policy: prod_policy
+      catalog_claims: prod_claims
+    # In prod, run as a service principal rather than your user (recommended).
+    # run_as:
+    #   service_principal_name: <sp-application-id>
