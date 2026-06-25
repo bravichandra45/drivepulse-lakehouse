@@ -41,9 +41,10 @@ targets:
     mode: development          # prefixes resources with your username, pauses schedules
     default: true
     workspace:
-      # Replace with your Azure Databricks workspace URL, e.g.
-      # https://adb-1234567890123456.7.azuredatabricks.net
-      host: https://adb-REPLACE_ME.0.azuredatabricks.net
+      # DrivePulse workspace (premium, East US). Auth comes from the `drivepulse`
+      # profile in ~/.databrickscfg (azure-cli identity), selected via the
+      # DATABRICKS_CONFIG_PROFILE env var in .claude/settings.json.
+      host: https://adb-7405605467002690.10.azuredatabricks.net
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog_telematics: dev_telematics

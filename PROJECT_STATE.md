@@ -12,7 +12,12 @@ begin architecture design at Topic 1 (System context & boundary).
 - Tooling: git, gh, az, databricks (CLI 1.5.0), python 3.11 all installed on this machine.
 - Auth: Azure ✅ (balantrapu.ravichandra@gmail.com · "Azure subscription 1" 93a8c829… ·
   tenant 2bb692f9…). GitHub ✅ (bravichandra45, keyring; scopes repo/workflow/read:org/gist).
-  Databricks profile ❌ pending.
+  Databricks ✅ profile `drivepulse` in ~/.databrickscfg using `auth_type = azure-cli`
+  (no PAT — reuses the az login token). User is a workspace ADMIN (allow-cluster-create).
+- Bundle: `databricks bundle validate` PASSES against dev/real workspace. databricks.yml dev
+  host set to real URL; prod host still REPLACE_ME (no separate prod workspace yet).
+- Auth note: browser/device login flows are flaky in this setup; azure-cli passthrough is the
+  reliable path for Databricks. DATABRICKS_CONFIG_PROFILE=drivepulse is set in .claude/settings.json.
 - Databricks workspace EXISTS: `databricks_mission_2026_dataai` · rg_mission_2026_dataai ·
   eastus · premium · URL `adb-7405605467002690.10.azuredatabricks.net`.
 - RG is SHARED with a "finance mission" + a SQL app (app-mission-sql/app_mission_db, eastasia).
@@ -53,12 +58,11 @@ begin architecture design at Topic 1 (System context & boundary).
 - CLAUDE.md §0 (operating model + session protocol) added.
 
 ## Next action
-1. Finish CLI auth: GitHub (`gh auth login`) + Databricks profile
-   (`databricks auth login --host adb-7405605467002690.10.azuredatabricks.net`).
-   Then set bundle `host` to the real URL and run `databricks bundle validate`.
+1. ✅ DONE — CLI auth (Azure/GitHub/Databricks) + bundle wired & validated against dev workspace.
 2. (pending user) NEW architecture / sources / requirements to be locked shortly — "a lot will
    change." Treat current CLAUDE.md architecture as provisional until that lock.
 3. Then architecture design topics + agile plan. No build code until design is agreed.
+4. (later, when prod needed) provision Event Hubs + set prod workspace host.
 
 ## Open questions / blockers
 - [ ] Where do job-search skills currently live in Claude Code — global `~/.claude/skills/`,
@@ -74,4 +78,5 @@ begin architecture design at Topic 1 (System context & boundary).
 - **2026-06-25 s3** — Option 1 chosen (Claude drives via authenticated CLIs). Installed gh/az/
   databricks/python3.11. Azure login done; discovered existing premium workspace
   databricks_mission_2026_dataai (eastus) + shared RG inventory. Corrected CLAUDE.md §12
-  (premium, not free/trial). GitHub + Databricks auth still pending.
+  (premium, not free/trial). Completed GitHub (bravichandra45) + Databricks (azure-cli profile
+  `drivepulse`) auth; wired bundle dev host to real URL; `bundle validate` passes. Fully wired.
