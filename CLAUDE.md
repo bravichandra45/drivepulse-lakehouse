@@ -269,8 +269,15 @@ profile in `~/.databrickscfg` (see SETUP in README). Never put host/token in cod
 ## 12. Environment facts
 
 - **Cloud:** Azure. Resource group `rg_mission_2026_dataai`, region **East US**.
-- **Storage:** ADLS Gen2 (Unity Catalog external locations / managed storage).
-- **Streaming:** Azure Event Hubs (Kafka-compatible endpoint).
+- **Workspace:** `databricks_mission_2026_dataai` · **premium** SKU · URL
+  `https://adb-7405605467002690.10.azuredatabricks.net`. Subscription "Azure subscription 1"
+  (`93a8c829-2e6d-47b5-a362-7a6aca839b9b`), tenant `2bb692f9-…`.
+- **Storage:** ADLS Gen2 — `adls4missiondataai` (East US) is DrivePulse's lake.
+- **Streaming:** Azure Event Hubs (Kafka-compatible endpoint) — **not provisioned yet**.
 - **Workspace URL form:** `https://adb-<id>.<n>.azuredatabricks.net`.
-- This is a **free/trial-tier** workspace — keep clusters small, autoterminate aggressively,
-  and prefer serverless or single-node where possible.
+- Premium tier enables row filters, column masks, and serverless — which the governance
+  patterns need. Still keep clusters small, autoterminate aggressively, and prefer serverless
+  or single-node to control credit spend.
+- **The resource group is SHARED** with a separate "finance mission" and a SQL-backed app
+  (`app-mission-sql`, East Asia). Touch only DrivePulse resources; prefix anything new
+  `drivepulse_*`. Never modify the finance/SQL resources.
