@@ -1,6 +1,9 @@
 # Claims · Phase 1 — Bronze Requirement Contract
 
-Catalog `dev_claims`. Pattern: Auto Loader batch from UC Volume `dev_claims.bronze.landing`.
+Catalog `dev_claims`. Pattern: Auto Loader batch from **ADLS landing** — an **external** UC Volume
+`dev_claims.bronze.landing` backed by `abfss://raw@adls4missiondataai.dfs.core.windows.net/claims/landing/`
+(uses existing storage credential `adls_dbx_cred` / external location `adls_dbx_external`, file events ON).
+Source files **land in ADLS**, not a UC-managed volume. Upload via Databricks (managed identity).
 All tables append-only, as-is, + `_ingest_ts`, `_source_file`, `_batch_id`, `_rescued_data`.
 
 | Bronze table | Source file | Format | Rows | Key columns | PII to TAG |
@@ -14,7 +17,8 @@ All tables append-only, as-is, + `_ingest_ts`, `_source_file`, `_batch_id`, `_re
 ## Rules
 - Zero transforms; keep source types (string-safe). Drop nothing.
 - Delimiters per table (note Spanish `;`). NHTSA complaints is tab-delimited, fixed layout — see CMPL.txt; `_c39` junk column in insurance_claims is kept as-is.
-- Land local CSVs to `dev_claims.bronze.landing` (UC Volume); Auto Loader reads from there.
+- Land local CSVs into ADLS at `.../claims/landing/<source>/` via the external Volume
+  `dev_claims.bronze.landing`; Auto Loader reads from that ADLS path.
 - Tag PII columns in Unity Catalog; **do not mask**.
 - Idempotent + checkpointed (`trigger(availableNow=True)`).
 

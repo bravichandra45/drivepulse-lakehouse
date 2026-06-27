@@ -1,12 +1,13 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-25 · session 2 · by Claude_
+_Last updated: 2026-06-26 · session 4 · by Claude_
 
 > Read this first every session. Update it last every session.
 
 ## Current phase
-**Phase 0 — setup.** Operating model + workflow locked. Isolated Claude Code project config
-generated. Next: stand up the project in Claude Code (per docs/SETUP_CLAUDE_CODE.md), then
-begin architecture design at Topic 1 (System context & boundary).
+**Phase 1 — Claims Bronze.** Claims architecture LOCKED (ADR 0002). Working on branch
+`feat/claims-bronze`, catalog `dev_claims`. Goal: 5 sources → 5 `raw_*` bronze tables via Auto
+Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at review gate**
+(no silver/gold). Environment fully wired (see audit below).
 
 ## Environment audit (2026-06-25, s3) — VERIFIED
 - Tooling: git, gh, az, databricks (CLI 1.5.0), python 3.11 all installed on this machine.
@@ -50,6 +51,12 @@ begin architecture design at Topic 1 (System context & boundary).
 - Isolation: directory scoping is the real lock (project `.claude/` here; job-search skills kept
   in their own repo, out of `~/.claude/skills/`). `strictPluginOnlyCustomization` is
   managed-settings-only — not used for this solo setup.
+- **Claims domain LOCKED (ADR 0002):** "Claims Intelligence & Fraud". 5 real sources →
+  bronze→silver→gold→ML→GenAI. Facts: fact_claim, fact_claim_lifecycle, fact_claim_status_history,
+  fact_complaint. Lifecycle dates derived/synthetic (seeded). Build Bronze-first, PR-gated per phase.
+- **Raw landing in ADLS** (not UC-managed volumes): `raw` container of `adls4missiondataai`,
+  external Volume `dev_claims.bronze.landing` → `.../claims/landing/`; upload via Databricks identity.
+- **GitHub repo: PUBLIC** (`drivepulse-lakehouse`). Data files gitignored; download script versioned.
 
 ## Done
 - Repo scaffold (37 files) + PROJECT_INSTRUCTIONS.md + PROJECT_STATE.md.
@@ -58,11 +65,13 @@ begin architecture design at Topic 1 (System context & boundary).
 - CLAUDE.md §0 (operating model + session protocol) added.
 
 ## Next action
-1. ✅ DONE — CLI auth (Azure/GitHub/Databricks) + bundle wired & validated against dev workspace.
-2. (pending user) NEW architecture / sources / requirements to be locked shortly — "a lot will
-   change." Treat current CLAUDE.md architecture as provisional until that lock.
-3. Then architecture design topics + agile plan. No build code until design is agreed.
-4. (later, when prod needed) provision Event Hubs + set prod workspace host.
+1. ✅ DONE — CLI auth + bundle validated; Claims package staged; docs/ADR updated; public repo decided.
+2. **Push `feat/claims-bronze` to new public `origin`.**
+3. **Run live Bronze build** (awaiting go): create `dev_claims` + bronze schema; external Volume
+   `bronze.landing` on ADLS; download 366MB NHTSA complaints; upload 5 sources to ADLS; Auto Loader
+   → 5 `raw_*` tables; PII tags; validate row counts (1000/15420/7366/26639/complaints) + samples.
+4. Open PR "UC Claims — Phase 1 Bronze"; update PROJECT_STATE + SESSION_LOG; **STOP for review**.
+5. (later) provision Event Hubs + prod workspace host; Policy/Telematics domains.
 
 ## Open questions / blockers
 - [ ] Where do job-search skills currently live in Claude Code — global `~/.claude/skills/`,
@@ -80,3 +89,8 @@ begin architecture design at Topic 1 (System context & boundary).
   databricks_mission_2026_dataai (eastus) + shared RG inventory. Corrected CLAUDE.md §12
   (premium, not free/trial). Completed GitHub (bravichandra45) + Databricks (azure-cli profile
   `drivepulse`) auth; wired bundle dev host to real URL; `bundle validate` passes. Fully wired.
+- **2026-06-26 s4** — Received + staged locked Claims package (architecture, user stories, data
+  supply, bronze contract) under docs/claims + docs/contracts; created branch feat/claims-bronze.
+  Wrote ADR 0002 (Claims locked + ADLS landing). Decided: source files land in ADLS `raw` container
+  via external Volume (not UC-managed); repo PUBLIC. Updated CLAUDE.md §4/§5/§12, .gitignore,
+  contract. Verified UC already has external location adls_dbx_external (file events on) on the lake.

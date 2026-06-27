@@ -15,8 +15,13 @@ venv/
 .pytest_cache/
 *.egg-info/
 
-# Data — never commit raw datasets
-data/
+# Data — never commit raw datasets (but DO version the reproducible download script).
+# Granular form: a bare `data/` exclusion can't be un-ignored per-file, so ignore contents
+# and re-include the script explicitly.
+/data/*
+!/data/claims/
+/data/claims/*
+!/data/claims/download_all_sources.py
 *.csv
 *.parquet
 *.zip
