@@ -1,5 +1,5 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-26 · session 4 · by Claude_
+_Last updated: 2026-06-26 · session 5 · by Claude_
 
 > Read this first every session. Update it last every session.
 
@@ -64,14 +64,18 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   `.claude/settings.local.json.example`, `.gitignore` updated, `docs/SETUP_CLAUDE_CODE.md`.
 - CLAUDE.md §0 (operating model + session protocol) added.
 
-## Next action
-1. ✅ DONE — CLI auth + bundle validated; Claims package staged; docs/ADR updated; public repo decided.
-2. **Push `feat/claims-bronze` to new public `origin`.**
-3. **Run live Bronze build** (awaiting go): create `dev_claims` + bronze schema; external Volume
-   `bronze.landing` on ADLS; download 366MB NHTSA complaints; upload 5 sources to ADLS; Auto Loader
-   → 5 `raw_*` tables; PII tags; validate row counts (1000/15420/7366/26639/complaints) + samples.
-4. Open PR "UC Claims — Phase 1 Bronze"; update PROJECT_STATE + SESSION_LOG; **STOP for review**.
-5. (later) provision Event Hubs + prod workspace host; Policy/Telematics domains.
+## Next action (resume tomorrow)
+1. ✅ DONE — Bronze ingestion notebook built + run on `prod_claims`: 4/5 tables loaded with exact
+   counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed.
+2. **Upload `FLAT_CMPL.txt`** (~366MB) to the landing volume → re-run notebook for `raw_complaints` (5th table).
+3. Verify PII tags (`information_schema.column_tags`); bundle-ify the run as a job in `resources/jobs.yml`.
+4. Open PR "UC Claims — Phase 1 Bronze"; **STOP at review gate** (no silver/gold).
+5. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
+
+## Build target note
+- Building directly against existing **`prod_claims`** catalog (has bronze/silver/gold schemas).
+- Landing = user-created managed volume `prod_claims.bronze.claims_landing_zone` (ADLS-backed).
+- Story model: **one story per source file**; user reviews each before moving on (user=approver, Claude=sr dev).
 
 ## Open questions / blockers
 - [ ] Where do job-search skills currently live in Claude Code — global `~/.claude/skills/`,
@@ -94,3 +98,8 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   Wrote ADR 0002 (Claims locked + ADLS landing). Decided: source files land in ADLS `raw` container
   via external Volume (not UC-managed); repo PUBLIC. Updated CLAUDE.md §4/§5/§12, .gitignore,
   contract. Verified UC already has external location adls_dbx_external (file events on) on the lake.
+- **2026-06-26 s5** — Built reusable dynamic Claims Bronze notebook (domains/claims/bronze/
+  ingest_bronze.py): config-driven Auto Loader, string-safe, rescued data, ingest metadata,
+  idempotent checkpoints, PII tags. Ran on prod_claims via serverless job — 4/5 tables loaded
+  with exact row counts (complaints skipped, file not uploaded). Target switched to prod_claims
+  (existing). Approved by user; committed + pushed.

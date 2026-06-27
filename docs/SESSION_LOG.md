@@ -78,3 +78,45 @@ state Succeeded · URL `adb-7405605467002690.10.azuredatabricks.net`.
   — current CLAUDE.md design is provisional until that lock.
 - Next: user drops new requirements → propose doc changes → approve → re-baseline → build
   (bootstrap UC → telematics vertical slice first).
+
+---
+
+## 2026-06-26 · Session 5 — Claims Bronze build (Story: dynamic ingestion)
+
+**Goal:** Build Claims Bronze ingestion. Operating model reaffirmed: user = approver,
+Claude = senior developer writing all code; one story at a time; target the existing
+`prod_claims` catalog (not `dev_claims`); user creates the ADLS landing zone.
+
+### What was built
+- Single **reusable, config-driven** notebook `domains/claims/bronze/ingest_bronze.py`:
+  a `SOURCES` registry (one entry per source file) + generic Auto Loader (`cloudFiles`) logic.
+- String-safe ingest (`inferColumnTypes=false`), `schemaEvolutionMode=rescue` +
+  `_rescued_data`, per-source `sep`/`header`, `pathGlobFilter` to isolate each file.
+- Ingest metadata on every row: `_ingest_ts`, `_source_file`, `_batch_id`, `_rescued_data`.
+- Append-only managed Delta via `toTable`, per-table checkpoints in auto-created volume
+  `prod_claims.bronze.checkpoints`, `trigger(availableNow=True)` → idempotent (US-B3).
+- PII columns tagged in UC (`SET TAGS ('pii'='true')`), **not masked** (US-B2).
+- Returns counts via `dbutils.notebook.exit(json)`.
+
+### Landing zone (user-created)
+- UC managed volume `prod_claims.bronze.claims_landing_zone`, ADLS-backed
+  (`abfss://raw@adls4missiondataai…/__unitystorage/…`). User uploaded 4 CSVs + the download script.
+
+### Run + result (serverless one-time job submit → SUCCESS)
+| Table | Rows | Expected |
+|---|---|---|
+| `prod_claims.bronze.raw_insurance_claims` | 1,000 | 1,000 ✅ |
+| `prod_claims.bronze.raw_carclaims` | 15,420 | 15,420 ✅ |
+| `prod_claims.bronze.raw_claims_by_type` | 7,366 | 7,366 ✅ |
+| `prod_claims.bronze.raw_claim_severity` | 26,639 | 26,639 ✅ |
+| `prod_claims.bronze.raw_complaints` | — | skipped — `FLAT_CMPL.txt` not uploaded yet |
+
+Execution path: wrote notebook in repo → imported to workspace
+`/Users/balantrapu.ravichandra@gmail.com/drivepulse/ingest_bronze` → `databricks jobs submit`
+(serverless, no-wait) → polled `get-run` → `get-run-output` for counts.
+
+### Open / next (resume tomorrow)
+- Upload `FLAT_CMPL.txt` (~366MB, `download_all_sources.py --big`) → re-run for `raw_complaints`.
+- Verify PII tags visible (`information_schema.column_tags`).
+- Bundle-ify the run as a job in `resources/jobs.yml` (replace manual import).
+- Then open PR "UC Claims — Phase 1 Bronze" at the review gate.
