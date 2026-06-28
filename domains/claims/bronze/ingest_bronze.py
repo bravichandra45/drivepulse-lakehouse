@@ -123,13 +123,12 @@ for src in SOURCES:
             print(f"WARN PII column not found (skipped): {fqn}.{pii}")
 
 # COMMAND ----------
-# DBTITLE 1,Validate — row counts + 5-row sample per table
-for table, r in results.items():
-    if r["status"] != "OK":
-        print(f"--- {table}: {r['status']} ---")
-        continue
-    print(f"--- {r['fqn']}  ({r['rows']} rows) ---")
-    spark.table(r["fqn"]).show(5, truncate=True)
+# MAGIC %md
+# MAGIC ### Validation lives in the shared notebook
+# MAGIC Row-count validation is now a reusable, cross-domain asset:
+# MAGIC **`validation/dynamic_row_count_validation.py`**. Run it with `expectations`, e.g.
+# MAGIC `{"prod_claims.bronze.raw_insurance_claims": 1000, ...}`. This notebook only *loads*;
+# MAGIC the validator *checks*. (Counts are still returned below for the caller.)
 
 # COMMAND ----------
 # DBTITLE 1,Return results to the caller
