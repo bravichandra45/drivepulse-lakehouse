@@ -23,7 +23,7 @@ dbutils.widgets.text("fail_on_mismatch", "true", "Raise on any FAIL (true/false)
 # COMMAND ----------
 # DBTITLE 1,Parse inputs
 import json
-from pyspark.sql import Row
+from pyspark.sql.types import StructType, StructField, StringType, LongType
 
 expectations = {}
 _raw = dbutils.widgets.get("expectations").strip()
@@ -67,7 +67,15 @@ for fqn, expected in targets.items():
 
 # COMMAND ----------
 # DBTITLE 1,Report
-display(spark.createDataFrame([Row(**r) for r in results]))
+# Explicit schema so count-only mode (expected all None) doesn't break type inference.
+_schema = StructType([
+    StructField("table", StringType(), True),
+    StructField("expected", LongType(), True),
+    StructField("actual", LongType(), True),
+    StructField("status", StringType(), True),
+])
+_rows = [(r["table"], r["expected"], r["actual"], r["status"]) for r in results]
+display(spark.createDataFrame(_rows, _schema))
 for r in results:
     print(f"{r['status']:>7}  {r['table']}  actual={r['actual']} expected={r['expected']}")
 
