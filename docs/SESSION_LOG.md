@@ -120,3 +120,38 @@ Execution path: wrote notebook in repo → imported to workspace
 - Verify PII tags visible (`information_schema.column_tags`).
 - Bundle-ify the run as a job in `resources/jobs.yml` (replace manual import).
 - Then open PR "UC Claims — Phase 1 Bronze" at the review gate.
+
+---
+
+## 2026-06-29 · Session 8 — Claims Silver (all EPIC-2 stories)
+
+**Goal:** Build & test all Silver stories. Engine locked: **Lakeflow Declarative Pipeline** (ADR 0003);
+granularity per-user-story; target `prod_claims`.
+
+### Built
+- `domains/claims/silver/claims_silver_pipeline.py` (DLT) + `resources/claims_silver.yml` (serverless pipeline).
+- Tables in `prod_claims.silver`: `claim`, `claim_quarantine`, `claim_status_history`,
+  `claim_severity`, `dim_policyholder` (SCD2), `dim_vehicle` (SCD2).
+- S1 conform (insurance_claims + carclaims → one grain, typed, deduped, surrogate `claim_id`).
+- S2 seeded synthetic lifecycle (fnol/status/settlement/cycle_time) + status-history transitions.
+- S3 expectations → quarantine (amount≥0, valid type, age≥16, dates ordered); nothing dropped.
+- S4 SCD2 dims via `apply_changes(stored_as_scd_type=2)`.
+
+### Tested (validation/claims_silver_checks.py — all assertions pass)
+| Table | Rows |
+|---|---|
+| claim | 16,100 |
+| claim_quarantine | 320 (all `age_lt_16`) |
+| claim_status_history | 46,267 (covers all 16,100 claims) |
+| claim_severity | 34,005 (= 26,639 + 7,366) |
+| dim_policyholder (SCD2) | 16,420 |
+| dim_vehicle (SCD2) | 609 |
+
+Reconciliation: claim + quarantine = 16,420 = bronze total (1000+15420), 0 dupes, no overlap.
+SCD2 dims carry `__START_AT`/`__END_AT`; current = distinct keys. Quarantine path proven on real
+failing rows (320 age<16). DLT run: all 6 flows COMPLETED.
+
+### Deferred / notes
+- `silver.complaint` — needs the NHTSA complaints bronze table (parked).
+- SCD2 version-2 example not fabricated into locked Bronze (would break row-count DoD); mechanism in place.
+- Branch `feat/claims-silver`; PR opened for review. On merge → Gold (EPIC 3).

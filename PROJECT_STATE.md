@@ -1,13 +1,13 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-29 · session 7 · by Claude_
+_Last updated: 2026-06-29 · session 8 · by Claude_
 
 > Read this first every session. Update it last every session.
 
 ## Current phase
-**Phase 1 — Claims Bronze.** Claims architecture LOCKED (ADR 0002). Working on branch
-`feat/claims-bronze`, catalog `dev_claims`. Goal: 5 sources → 5 `raw_*` bronze tables via Auto
-Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at review gate**
-(no silver/gold). Environment fully wired (see audit below).
+**Phase 2 — Claims Silver (built, awaiting review).** Bronze merged to master. Silver built as a
+Lakeflow Declarative Pipeline (ADR 0003) on branch `feat/claims-silver`, catalog `prod_claims`.
+All EPIC-2 stories done + tested (claim/quarantine/status_history/severity + SCD2 dims). PR open.
+Next gate: user review → merge → Gold. (`silver.complaint` deferred with the complaints file.)
 
 ## Environment audit (2026-06-25, s3) — VERIFIED
 - Tooling: git, gh, az, databricks (CLI 1.5.0), python 3.11 all installed on this machine.
@@ -64,9 +64,10 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   `.claude/settings.local.json.example`, `.gitignore` updated, `docs/SETUP_CLAUDE_CODE.md`.
 - CLAUDE.md §0 (operating model + session protocol) added.
 
-## Next action (resume tomorrow)
+## Next action
+0. **Silver built — review PR `feat/claims-silver`** (UC Claims — Phase 2 Silver). On merge → Gold.
 1. ✅ DONE — Bronze ingestion notebook built + run on `prod_claims`: 4/5 tables loaded with exact
-   counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed.
+   counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed (merged).
 2. ⏸️ DEFERRED a few days (user): upload `FLAT_CMPL.txt` for `raw_complaints` (5th table).
 3. ⏸️ DEFERRED a few days (user): verify PII tags (`information_schema.column_tags`).
 4. ✅ DONE — Job `claims_bronze_ingest` created (resources/jobs.yml IaC + live API job_id
@@ -124,3 +125,10 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   DATABRICKS_AUTH_TYPE=oauth-m2m, fixed push trigger main→master. Reconciled bundle so deploy
   is clean: disabled dev_* scaffold (catalogs/pipelines/jobs → *.disabled), moved claims job to
   resources/claims_bronze.yml. CI now GREEN; `bundle deploy -t dev` verified (job 899285954091552).
+- **2026-06-29 s8** — Built Claims SILVER as a Lakeflow Declarative Pipeline (ADR 0003):
+  domains/claims/silver/claims_silver_pipeline.py + resources/claims_silver.yml. Deployed + ran
+  (all 6 flows COMPLETED). Tables in prod_claims.silver: claim (16,100), claim_quarantine (320,
+  all age_lt_16), claim_status_history (46,267), claim_severity (34,005), dim_policyholder (16,420
+  SCD2), dim_vehicle (609 SCD2). Verified via validation/claims_silver_checks.py — all assertions
+  pass (reconciliation, no overlap, severity match, SCD2 __START_AT/__END_AT, history coverage).
+  Branch feat/claims-silver; PR open for review.
