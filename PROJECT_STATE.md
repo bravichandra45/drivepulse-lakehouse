@@ -1,5 +1,5 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-26 · session 5 · by Claude_
+_Last updated: 2026-06-27 · session 6 · by Claude_
 
 > Read this first every session. Update it last every session.
 
@@ -67,10 +67,15 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
 ## Next action (resume tomorrow)
 1. ✅ DONE — Bronze ingestion notebook built + run on `prod_claims`: 4/5 tables loaded with exact
    counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed.
-2. **Upload `FLAT_CMPL.txt`** (~366MB) to the landing volume → re-run notebook for `raw_complaints` (5th table).
-3. Verify PII tags (`information_schema.column_tags`); bundle-ify the run as a job in `resources/jobs.yml`.
-4. Open PR "UC Claims — Phase 1 Bronze"; **STOP at review gate** (no silver/gold).
-5. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
+2. ⏸️ DEFERRED a few days (user): upload `FLAT_CMPL.txt` for `raw_complaints` (5th table).
+3. ⏸️ DEFERRED a few days (user): verify PII tags (`information_schema.column_tags`).
+4. ✅ DONE — Job `claims_bronze_ingest` created (resources/jobs.yml IaC + live API job_id
+   1120539426174635). Serverless, 2 tasks (ingest → validate_row_counts), idempotent, 4/4 PASS.
+5. PR "UC Claims — Phase 1 Bronze" under user review.
+6. ⚠️ Full `bundle deploy` is BLOCKED — `dev_*` catalogs don't exist; catalogs.yml schemas +
+   stub pipelines need reconciling. Until then, the job lives as bundle IaC + an API-created job
+   (converge to bundle-managed during scaffold cleanup). `bundle validate` passes.
+7. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
 
 ## Build target note
 - Building directly against existing **`prod_claims`** catalog (has bronze/silver/gold schemas).
@@ -103,3 +108,9 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   idempotent checkpoints, PII tags. Ran on prod_claims via serverless job — 4/5 tables loaded
   with exact row counts (complaints skipped, file not uploaded). Target switched to prod_claims
   (existing). Approved by user; committed + pushed.
+- **2026-06-27 s6** — Extracted reusable row-count validator (validation/), tested all paths
+  (PASS/FAIL-soft/FAIL-hard/schema), fixed a count-only type-inference bug. Created
+  `claims_bronze_ingest` job: bundle IaC (resources/jobs.yml, serverless ingest→validate) +
+  live API job (job_id 1120539426174635); verified end-to-end (idempotent, 4/4 PASS). Pointed
+  bundle var catalog_claims→prod_claims. Confirmed full bundle deploy blocked (dev_* missing).
+  Complaints + PII-tag verification deferred a few days per user. PR under review.

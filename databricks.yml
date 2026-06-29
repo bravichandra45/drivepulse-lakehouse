@@ -49,7 +49,8 @@ targets:
     variables:
       catalog_telematics: dev_telematics
       catalog_policy: dev_policy
-      catalog_claims: dev_claims
+      # Claims is built against the existing prod_claims catalog (no dev_claims catalog exists).
+      catalog_claims: prod_claims
 
   # ---- Production ------------------------------------------------------------
   prod:
