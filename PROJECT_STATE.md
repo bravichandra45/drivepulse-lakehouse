@@ -1,5 +1,5 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-27 · session 6 · by Claude_
+_Last updated: 2026-06-29 · session 7 · by Claude_
 
 > Read this first every session. Update it last every session.
 
@@ -72,10 +72,14 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
 4. ✅ DONE — Job `claims_bronze_ingest` created (resources/jobs.yml IaC + live API job_id
    1120539426174635). Serverless, 2 tasks (ingest → validate_row_counts), idempotent, 4/4 PASS.
 5. PR "UC Claims — Phase 1 Bronze" under user review.
-6. ⚠️ Full `bundle deploy` is BLOCKED — `dev_*` catalogs don't exist; catalogs.yml schemas +
-   stub pipelines need reconciling. Until then, the job lives as bundle IaC + an API-created job
-   (converge to bundle-managed during scaffold cleanup). `bundle validate` passes.
-7. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
+6. ✅ DONE — CI/CD fixed & GREEN. SP `drivepulse-cicd` (OAuth M2M) for CI/CD; GH secrets
+   DATABRICKS_HOST/CLIENT_ID/CLIENT_SECRET set. Reconciled bundle (disabled dev_* scaffold →
+   resources/*.disabled; claims job in resources/claims_bronze.yml). `bundle deploy -t dev`
+   verified (job 899285954091552). Workflows pinned auth_type=oauth-m2m; push trigger fixed
+   main→master. pyproject.toml fixes pytest src-layout.
+7. NOTE: interim API job (1120539426174635) still exists alongside bundle-managed job — delete
+   when fully on bundle. CD auto-runs on merge to master (deploy.yml).
+8. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
 
 ## Build target note
 - Building directly against existing **`prod_claims`** catalog (has bronze/silver/gold schemas).
@@ -114,3 +118,9 @@ Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at 
   live API job (job_id 1120539426174635); verified end-to-end (idempotent, 4/4 PASS). Pointed
   bundle var catalog_claims→prod_claims. Confirmed full bundle deploy blocked (dev_* missing).
   Complaints + PII-tag verification deferred a few days per user. PR under review.
+- **2026-06-29 s7** — Fixed CI/CD (both checks were red). test: added pyproject.toml
+  (pytest pythonpath=src). validate/deploy: created CI/CD service principal `drivepulse-cicd`
+  (workspace OAuth M2M via service-principal-secrets-proxy), set GH secrets, pinned
+  DATABRICKS_AUTH_TYPE=oauth-m2m, fixed push trigger main→master. Reconciled bundle so deploy
+  is clean: disabled dev_* scaffold (catalogs/pipelines/jobs → *.disabled), moved claims job to
+  resources/claims_bronze.yml. CI now GREEN; `bundle deploy -t dev` verified (job 899285954091552).
