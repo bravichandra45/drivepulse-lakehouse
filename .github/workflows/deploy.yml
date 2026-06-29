@@ -22,8 +22,10 @@ jobs:
 
       - name: Deploy bundle
         env:
+          # Service-principal OAuth (M2M); CLI auto-detects these env vars.
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
         run: |
           TARGET="${{ github.event.inputs.target || 'dev' }}"
           databricks bundle validate -t "$TARGET"
