@@ -1,0 +1,16 @@
+# resources/claims_gold.yml
+# Claims Gold — Lakeflow Declarative Pipeline (serverless). Kimball star + marts, from silver.
+
+resources:
+  pipelines:
+    claims_gold:
+      name: "[${bundle.target}] claims_gold"
+      catalog: ${var.catalog_claims}
+      schema: gold
+      serverless: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../domains/claims/gold/claims_gold_pipeline.py
+      configuration:
+        catalog: ${var.catalog_claims}
