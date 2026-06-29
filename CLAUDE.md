@@ -130,8 +130,9 @@ If you implement a feature and it doesn't exercise one of these, ask whether it 
 | Policy      | `fact_policy_inforce_monthly`     | one row per policy-month       |
 |             | `fact_policy_transaction`         | one row per new/renew/cancel/endorse |
 | Claims      | `fact_claim`                      | one row per claim              |
+|             | `fact_claim_lifecycle`            | accumulating snapshot (milestones, cycle time) |
 |             | `fact_claim_status_history`       | one row per status change      |
-|             | `fact_claim_payment`              | one row per payment            |
+|             | `fact_complaint`                  | one row per NHTSA complaint    |
 
 **Cross-domain marts** (the analytics payoff — what agents actually query):
 `mart_driver_risk_score`, `mart_claim_360`, `mart_pricing_recommendation`,
@@ -145,11 +146,15 @@ If you implement a feature and it doesn't exercise one of these, ask whether it 
 |-------------|-------------------------------------------------------------------------------|
 | Telematics  | Vehicle Energy Dataset (VED) + Extended VED (eVED), UAH-DriveSet, comma2k19    |
 | Policy      | Porto Seguro Safe Driver (~595K train rows), Kaggle vehicle-insurance sets     |
-| Claims      | Allstate Claims Severity (~188K), Allstate Claim Prediction Challenge          |
+| Claims      | insurance_claims (1k), carclaims (15.4k), sample_type_claim (7.4k, Mendeley), freMTPL2sev (26.6k, OpenML), NHTSA complaints (FLAT_CMPL, ~366MB) |
 | Vehicle     | NHTSA vPIC (Postgres/SQL Server DBs), NHTSA Recalls API (30K+ recalls)          |
 | Safety      | NHTSA FARS (~989K fatalities since 1975), ODI complaint narratives             |
 | Environment | NOAA GHCN-Daily weather, OpenStreetMap (PostGIS), FHWA HPMS AADT               |
 | Documents   | NHTSA recall letters (PDF), state DOI sample policy forms, VOQ narratives      |
+
+**Canonical data supply (all domains):** `docs/claims/DATA_SUPPLY.md` supersedes the dataset
+rows above as sources get locked per domain. **Claims is locked** (see ADR 0002); its real
+sources are the five listed above. Policy/Telematics rows remain provisional until locked.
 
 **Honest gaps & approved fixes (document these in the repo README):**
 - No public dataset links telematics→policy→claim. **Fix:** deterministic synthetic join
@@ -272,7 +277,14 @@ profile in `~/.databrickscfg` (see SETUP in README). Never put host/token in cod
 - **Workspace:** `databricks_mission_2026_dataai` · **premium** SKU · URL
   `https://adb-7405605467002690.10.azuredatabricks.net`. Subscription "Azure subscription 1"
   (`93a8c829-2e6d-47b5-a362-7a6aca839b9b`), tenant `2bb692f9-…`.
-- **Storage:** ADLS Gen2 — `adls4missiondataai` (East US) is DrivePulse's lake.
+- **Storage:** ADLS Gen2 — `adls4missiondataai` (East US) is DrivePulse's lake. Container `raw`
+  is registered as UC external location `adls_dbx_external`
+  (`abfss://raw@adls4missiondataai.dfs.core.windows.net/`, file events ON) via storage credential
+  `adls_dbx_cred` → access connector `adls_connect_databricks`.
+- **Raw landing rule:** source/raw files **land in ADLS** (the `raw` container) via external
+  locations / **external** UC Volumes — never UC-managed volumes for landing. Auto Loader reads
+  from the ADLS path. Upload through Databricks (managed identity has data-plane access; the
+  `az` login does not have `Storage Blob Data *` RBAC).
 - **Streaming:** Azure Event Hubs (Kafka-compatible endpoint) — **not provisioned yet**.
 - **Workspace URL form:** `https://adb-<id>.<n>.azuredatabricks.net`.
 - Premium tier enables row filters, column masks, and serverless — which the governance

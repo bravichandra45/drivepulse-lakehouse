@@ -1,12 +1,13 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-25 · session 2 · by Claude_
+_Last updated: 2026-06-29 · session 7 · by Claude_
 
 > Read this first every session. Update it last every session.
 
 ## Current phase
-**Phase 0 — setup.** Operating model + workflow locked. Isolated Claude Code project config
-generated. Next: stand up the project in Claude Code (per docs/SETUP_CLAUDE_CODE.md), then
-begin architecture design at Topic 1 (System context & boundary).
+**Phase 1 — Claims Bronze.** Claims architecture LOCKED (ADR 0002). Working on branch
+`feat/claims-bronze`, catalog `dev_claims`. Goal: 5 sources → 5 `raw_*` bronze tables via Auto
+Loader from **ADLS landing**, PII tags, validate row counts, open PR, **STOP at review gate**
+(no silver/gold). Environment fully wired (see audit below).
 
 ## Environment audit (2026-06-25, s3) — VERIFIED
 - Tooling: git, gh, az, databricks (CLI 1.5.0), python 3.11 all installed on this machine.
@@ -50,6 +51,12 @@ begin architecture design at Topic 1 (System context & boundary).
 - Isolation: directory scoping is the real lock (project `.claude/` here; job-search skills kept
   in their own repo, out of `~/.claude/skills/`). `strictPluginOnlyCustomization` is
   managed-settings-only — not used for this solo setup.
+- **Claims domain LOCKED (ADR 0002):** "Claims Intelligence & Fraud". 5 real sources →
+  bronze→silver→gold→ML→GenAI. Facts: fact_claim, fact_claim_lifecycle, fact_claim_status_history,
+  fact_complaint. Lifecycle dates derived/synthetic (seeded). Build Bronze-first, PR-gated per phase.
+- **Raw landing in ADLS** (not UC-managed volumes): `raw` container of `adls4missiondataai`,
+  external Volume `dev_claims.bronze.landing` → `.../claims/landing/`; upload via Databricks identity.
+- **GitHub repo: PUBLIC** (`drivepulse-lakehouse`). Data files gitignored; download script versioned.
 
 ## Done
 - Repo scaffold (37 files) + PROJECT_INSTRUCTIONS.md + PROJECT_STATE.md.
@@ -57,12 +64,27 @@ begin architecture design at Topic 1 (System context & boundary).
   `.claude/settings.local.json.example`, `.gitignore` updated, `docs/SETUP_CLAUDE_CODE.md`.
 - CLAUDE.md §0 (operating model + session protocol) added.
 
-## Next action
-1. ✅ DONE — CLI auth (Azure/GitHub/Databricks) + bundle wired & validated against dev workspace.
-2. (pending user) NEW architecture / sources / requirements to be locked shortly — "a lot will
-   change." Treat current CLAUDE.md architecture as provisional until that lock.
-3. Then architecture design topics + agile plan. No build code until design is agreed.
-4. (later, when prod needed) provision Event Hubs + set prod workspace host.
+## Next action (resume tomorrow)
+1. ✅ DONE — Bronze ingestion notebook built + run on `prod_claims`: 4/5 tables loaded with exact
+   counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed.
+2. ⏸️ DEFERRED a few days (user): upload `FLAT_CMPL.txt` for `raw_complaints` (5th table).
+3. ⏸️ DEFERRED a few days (user): verify PII tags (`information_schema.column_tags`).
+4. ✅ DONE — Job `claims_bronze_ingest` created (resources/jobs.yml IaC + live API job_id
+   1120539426174635). Serverless, 2 tasks (ingest → validate_row_counts), idempotent, 4/4 PASS.
+5. PR "UC Claims — Phase 1 Bronze" under user review.
+6. ✅ DONE — CI/CD fixed & GREEN. SP `drivepulse-cicd` (OAuth M2M) for CI/CD; GH secrets
+   DATABRICKS_HOST/CLIENT_ID/CLIENT_SECRET set. Reconciled bundle (disabled dev_* scaffold →
+   resources/*.disabled; claims job in resources/claims_bronze.yml). `bundle deploy -t dev`
+   verified (job 899285954091552). Workflows pinned auth_type=oauth-m2m; push trigger fixed
+   main→master. pyproject.toml fixes pytest src-layout.
+7. NOTE: interim API job (1120539426174635) still exists alongside bundle-managed job — delete
+   when fully on bundle. CD auto-runs on merge to master (deploy.yml).
+8. (later) Event Hubs + prod workspace host; Policy/Telematics domains.
+
+## Build target note
+- Building directly against existing **`prod_claims`** catalog (has bronze/silver/gold schemas).
+- Landing = user-created managed volume `prod_claims.bronze.claims_landing_zone` (ADLS-backed).
+- Story model: **one story per source file**; user reviews each before moving on (user=approver, Claude=sr dev).
 
 ## Open questions / blockers
 - [ ] Where do job-search skills currently live in Claude Code — global `~/.claude/skills/`,
@@ -80,3 +102,25 @@ begin architecture design at Topic 1 (System context & boundary).
   databricks_mission_2026_dataai (eastus) + shared RG inventory. Corrected CLAUDE.md §12
   (premium, not free/trial). Completed GitHub (bravichandra45) + Databricks (azure-cli profile
   `drivepulse`) auth; wired bundle dev host to real URL; `bundle validate` passes. Fully wired.
+- **2026-06-26 s4** — Received + staged locked Claims package (architecture, user stories, data
+  supply, bronze contract) under docs/claims + docs/contracts; created branch feat/claims-bronze.
+  Wrote ADR 0002 (Claims locked + ADLS landing). Decided: source files land in ADLS `raw` container
+  via external Volume (not UC-managed); repo PUBLIC. Updated CLAUDE.md §4/§5/§12, .gitignore,
+  contract. Verified UC already has external location adls_dbx_external (file events on) on the lake.
+- **2026-06-26 s5** — Built reusable dynamic Claims Bronze notebook (domains/claims/bronze/
+  ingest_bronze.py): config-driven Auto Loader, string-safe, rescued data, ingest metadata,
+  idempotent checkpoints, PII tags. Ran on prod_claims via serverless job — 4/5 tables loaded
+  with exact row counts (complaints skipped, file not uploaded). Target switched to prod_claims
+  (existing). Approved by user; committed + pushed.
+- **2026-06-27 s6** — Extracted reusable row-count validator (validation/), tested all paths
+  (PASS/FAIL-soft/FAIL-hard/schema), fixed a count-only type-inference bug. Created
+  `claims_bronze_ingest` job: bundle IaC (resources/jobs.yml, serverless ingest→validate) +
+  live API job (job_id 1120539426174635); verified end-to-end (idempotent, 4/4 PASS). Pointed
+  bundle var catalog_claims→prod_claims. Confirmed full bundle deploy blocked (dev_* missing).
+  Complaints + PII-tag verification deferred a few days per user. PR under review.
+- **2026-06-29 s7** — Fixed CI/CD (both checks were red). test: added pyproject.toml
+  (pytest pythonpath=src). validate/deploy: created CI/CD service principal `drivepulse-cicd`
+  (workspace OAuth M2M via service-principal-secrets-proxy), set GH secrets, pinned
+  DATABRICKS_AUTH_TYPE=oauth-m2m, fixed push trigger main→master. Reconciled bundle so deploy
+  is clean: disabled dev_* scaffold (catalogs/pipelines/jobs → *.disabled), moved claims job to
+  resources/claims_bronze.yml. CI now GREEN; `bundle deploy -t dev` verified (job 899285954091552).

@@ -1,0 +1,60 @@
+flowchart LR
+  subgraph SRC[5 Sources]
+    A[insurance_claims 1k]
+    B[carclaims 15k]
+    C[claims_by_type 7k]
+    D[freMTPL2sev 27k]
+    E[NHTSA complaints]
+  end
+  subgraph BRZ[Bronze - raw]
+    RB1[raw_insurance_claims]
+    RB2[raw_carclaims]
+    RB3[raw_claims_by_type]
+    RB4[raw_claim_severity]
+    RB5[raw_complaints]
+  end
+  subgraph SLV[Silver - conformed]
+    S1[silver.claim]
+    S2[silver.claim_severity]
+    S3[silver.complaint]
+    SH[claim_status_history CDC]
+    SD[dims x7]
+  end
+  subgraph GLD[Gold - star + marts]
+    F1[fact_claim]
+    F2[fact_claim_lifecycle]
+    F3[fact_claim_status_history]
+    F4[fact_complaint]
+    M1[mart_claims_kpi]
+    M2[mart_fraud_signals]
+    M3[feature_fraud]
+  end
+  subgraph USE[Consumption]
+    K[KPIs]
+    ML[ML: fraud + severity]
+    AI[GenAI: adjuster copilot]
+  end
+  A-->RB1
+  B-->RB2
+  C-->RB3
+  D-->RB4
+  E-->RB5
+  RB1-->S1
+  RB2-->S1
+  RB3-->S2
+  RB4-->S2
+  RB5-->S3
+  S1-->SD
+  S1-->SH
+  S1-->F1
+  S1-->F2
+  SH-->F3
+  S3-->F4
+  SD-->F1
+  F1-->M1
+  F1-->M2
+  F1-->M3
+  M1-->K
+  M3-->ML
+  F4-->AI
+  S3-->AI

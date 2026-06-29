@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# src-layout: make `import drivepulse...` resolve without installing the package.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

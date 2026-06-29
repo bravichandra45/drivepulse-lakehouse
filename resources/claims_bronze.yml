@@ -1,0 +1,33 @@
+# resources/claims_bronze.yml
+# Claims Phase 1 — Bronze ingestion job (serverless). Deployable via the bundle.
+# Loads all source files from the ADLS landing volume into <catalog>.bronze.raw_* via
+# Auto Loader, then validates row counts. Idempotent (Auto Loader checkpoints).
+
+resources:
+  jobs:
+    claims_bronze_ingest:
+      name: "[${bundle.target}] claims_bronze_ingest"
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      tasks:
+        - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../domains/claims/bronze/ingest_bronze.py
+            base_parameters:
+              catalog: ${var.catalog_claims}
+              landing_volume: /Volumes/${var.catalog_claims}/bronze/claims_landing_zone
+              checkpoint_volume: /Volumes/${var.catalog_claims}/bronze/checkpoints
+        - task_key: validate_row_counts
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../validation/dynamic_row_count_validation.py
+            base_parameters:
+              # Expected counts are intrinsic to the source files (contract DoD).
+              expectations: >-
+                {"${var.catalog_claims}.bronze.raw_insurance_claims": 1000,
+                 "${var.catalog_claims}.bronze.raw_carclaims": 15420,
+                 "${var.catalog_claims}.bronze.raw_claims_by_type": 7366,
+                 "${var.catalog_claims}.bronze.raw_claim_severity": 26639}
+              fail_on_mismatch: "true"
