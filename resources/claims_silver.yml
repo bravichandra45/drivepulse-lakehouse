@@ -1,0 +1,17 @@
+# resources/claims_silver.yml
+# Claims Silver — Lakeflow Declarative Pipeline (serverless). Conforms Bronze into Silver
+# with expectations + quarantine, seeded synthetic lifecycle + status history, and SCD2 dims.
+
+resources:
+  pipelines:
+    claims_silver:
+      name: "[${bundle.target}] claims_silver"
+      catalog: ${var.catalog_claims}
+      schema: silver
+      serverless: true
+      continuous: false
+      libraries:
+        - notebook:
+            path: ../domains/claims/silver/claims_silver_pipeline.py
+      configuration:
+        catalog: ${var.catalog_claims}
