@@ -155,3 +155,30 @@ failing rows (320 age<16). DLT run: all 6 flows COMPLETED.
 - `silver.complaint` — needs the NHTSA complaints bronze table (parked).
 - SCD2 version-2 example not fabricated into locked Bronze (would break row-count DoD); mechanism in place.
 - Branch `feat/claims-silver`; PR opened for review. On merge → Gold (EPIC 3).
+
+---
+
+## 2026-06-29 · Session 9 — Claims Gold (all EPIC-3 stories)
+
+**Goal:** Build & test all Gold stories. Engine: Lakeflow pipeline (ADR 0004), target `prod_claims.gold`.
+
+### Built (`domains/claims/gold/claims_gold_pipeline.py` + `resources/claims_gold.yml`)
+- **Dims:** dim_date (7,781), dim_claim_status, dim_claim_type, dim_geography, dim_incident,
+  dim_policyholder (16,420, current from silver SCD2), dim_vehicle (609).
+- **Facts:** fact_claim (16,100; dim keys + measures + denormalized descriptive attrs),
+  fact_claim_lifecycle (accumulating snapshot), fact_claim_status_history (46,267).
+- **Marts:** mart_claims_kpi (US-G1, by source_system), mart_fraud_signals (US-G2, 35 rows:
+  make/severity/claim_type), feature_fraud (US-G3, 16,100, no outcome leakage).
+
+### Tested (`validation/claims_gold_checks.py` — all assertions pass)
+- fact_claim = silver.claim = 16,100; lifecycle = 16,100; status_history = 46,267; feature_fraud = 16,100.
+- Referential integrity: 0 orphan dim keys (status/claim_type/geography/incident).
+- mart_claims_kpi reconciles: Σ claim_count 16,100 = fact_claim; Σ fraud 1,139 = fact fraud sum.
+- feature_fraud has label, no leakage columns.
+- Caught & fixed a notebook bug: a missing `# COMMAND ----------` made the checks notebook run as
+  one markdown cell (SUCCESS but no Python executed) — re-ran after fix to genuinely validate.
+
+### Deferred / notes
+- `loss_ratio` & `claim_frequency` null — need premium/exposure from the Policy domain (cross-domain).
+- `fact_complaint` deferred with the complaints source.
+- Branch `feat/claims-gold` (stacked on `feat/claims-silver`); PR opened. Next: ML (EPIC 4), GenAI (EPIC 5).

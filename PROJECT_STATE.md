@@ -1,13 +1,15 @@
 # PROJECT_STATE — DrivePulse Lakehouse
-_Last updated: 2026-06-29 · session 8 · by Claude_
+_Last updated: 2026-06-29 · session 9 · by Claude_
 
 > Read this first every session. Update it last every session.
 
 ## Current phase
-**Phase 2 — Claims Silver (built, awaiting review).** Bronze merged to master. Silver built as a
-Lakeflow Declarative Pipeline (ADR 0003) on branch `feat/claims-silver`, catalog `prod_claims`.
-All EPIC-2 stories done + tested (claim/quarantine/status_history/severity + SCD2 dims). PR open.
-Next gate: user review → merge → Gold. (`silver.complaint` deferred with the complaints file.)
+**Phase 3 — Claims Gold (built, awaiting review).** Silver PR #2 open; Gold built on top
+(ADR 0004) as a Lakeflow pipeline → `prod_claims.gold`: 7 dims, 3 facts (fact_claim,
+fact_claim_lifecycle, fact_claim_status_history), 3 marts (mart_claims_kpi, mart_fraud_signals,
+feature_fraud). All EPIC-3 stories done + tested (RI 0 orphans, KPI reconciles, no leakage).
+Branch `feat/claims-gold` (stacked on silver), PR open. Next: ML (EPIC 4) + GenAI (EPIC 5).
+Deferred: `silver.complaint`/`fact_complaint`; loss_ratio & claim_frequency (need Policy domain).
 
 ## Environment audit (2026-06-25, s3) — VERIFIED
 - Tooling: git, gh, az, databricks (CLI 1.5.0), python 3.11 all installed on this machine.
@@ -65,7 +67,8 @@ Next gate: user review → merge → Gold. (`silver.complaint` deferred with the
 - CLAUDE.md §0 (operating model + session protocol) added.
 
 ## Next action
-0. **Silver built — review PR `feat/claims-silver`** (UC Claims — Phase 2 Silver). On merge → Gold.
+0. **Review PRs:** #2 Silver (`feat/claims-silver`) then #3 Gold (`feat/claims-gold`, stacked).
+   Merge silver → master, then retarget/merge gold. Then ML (EPIC 4) → GenAI (EPIC 5).
 1. ✅ DONE — Bronze ingestion notebook built + run on `prod_claims`: 4/5 tables loaded with exact
    counts (1000/15420/7366/26639); PII tagged; idempotent. Approved + committed + pushed (merged).
 2. ⏸️ DEFERRED a few days (user): upload `FLAT_CMPL.txt` for `raw_complaints` (5th table).
@@ -132,3 +135,11 @@ Next gate: user review → merge → Gold. (`silver.complaint` deferred with the
   SCD2), dim_vehicle (609 SCD2). Verified via validation/claims_silver_checks.py — all assertions
   pass (reconciliation, no overlap, severity match, SCD2 __START_AT/__END_AT, history coverage).
   Branch feat/claims-silver; PR open for review.
+- **2026-06-29 s9** — Built Claims GOLD as a Lakeflow pipeline (ADR 0004): domains/claims/gold/
+  claims_gold_pipeline.py + resources/claims_gold.yml → prod_claims.gold. 7 dims + 3 facts
+  (fact_claim 16,100 / fact_claim_lifecycle / fact_claim_status_history 46,267) + 3 marts
+  (mart_claims_kpi, mart_fraud_signals 35, feature_fraud 16,100). Verified via
+  validation/claims_gold_checks.py — all pass: RI 0 orphans, KPI reconciles (Σ 16,100 / fraud
+  1,139), no leakage, fact=silver. (Caught a notebook-cell bug: missing # COMMAND made it run as
+  markdown.) Branch feat/claims-gold (stacked on silver); PR open. loss_ratio/claim_frequency null
+  (need Policy domain); fact_complaint deferred.
